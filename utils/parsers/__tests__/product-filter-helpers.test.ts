@@ -5,11 +5,17 @@ import {
   productSatisfiesAllFilters,
 } from "../product-filter-helpers";
 import { ProductData } from "../product-parser-functions";
+import { nip19 } from "nostr-tools";
 
 describe("product-filter-helpers", () => {
+  const pubkey =
+    "1111111111111111111111111111111111111111111111111111111111111111";
+  const otherPubkey =
+    "2222222222222222222222222222222222222222222222222222222222222222";
+
   const mockProduct: ProductData = {
     id: "test-id",
-    pubkey: "test-pubkey",
+    pubkey,
     createdAt: 12345678,
     title: "Eco Friendly Water Bottle",
     summary: "A sustainable way to stay hydrated.",
@@ -150,9 +156,49 @@ describe("product-filter-helpers", () => {
       ).toBe(true);
     });
 
-    // Note: Nip-19 decoding (naddr/npub) is handled by nostr-tools.
-    // In a full integration test we would use real naddr strings.
-    // Here we're mainly testing that the logic reaches the decode block.
+    it("should match a valid naddr search by d tag and pubkey", () => {
+      const naddr = nip19.naddrEncode({
+        identifier: mockProduct.d!,
+        pubkey: mockProduct.pubkey,
+        kind: 30402,
+      });
+
+      expect(productSatisfiesSearchFilter(mockProduct, naddr)).toBe(true);
+    });
+
+    it("should match a valid naddr search even when relay hints are present", () => {
+      const naddr = nip19.naddrEncode({
+        identifier: mockProduct.d!,
+        pubkey: mockProduct.pubkey,
+        kind: 30402,
+        relays: ["wss://relay.damus.io", "wss://nos.lol"],
+      });
+
+      expect(productSatisfiesSearchFilter(mockProduct, naddr)).toBe(true);
+    });
+
+    it("should reject a valid naddr search for a different pubkey", () => {
+      const naddr = nip19.naddrEncode({
+        identifier: mockProduct.d!,
+        pubkey: otherPubkey,
+        kind: 30402,
+      });
+
+      expect(productSatisfiesSearchFilter(mockProduct, naddr)).toBe(false);
+    });
+
+    it("should match a valid npub search by product pubkey", () => {
+      const npub = nip19.npubEncode(mockProduct.pubkey);
+
+      expect(productSatisfiesSearchFilter(mockProduct, npub)).toBe(true);
+    });
+
+    it("should reject a valid npub search for a different pubkey", () => {
+      const npub = nip19.npubEncode(otherPubkey);
+
+      expect(productSatisfiesSearchFilter(mockProduct, npub)).toBe(false);
+    });
+
     it("should return false for invalid naddr/npub strings instead of crashing", () => {
       expect(productSatisfiesSearchFilter(mockProduct, "naddr1invalid")).toBe(
         false

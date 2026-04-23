@@ -55,7 +55,7 @@ export const productSatisfiesSearchFilter = (
   if (!productData.title) return false;
 
   // Handle Nip-19 naddr search
-  if (normalizedSearch.includes("naddr1")) {
+  if (normalizedSearch.startsWith("naddr1")) {
     try {
       const parsedNaddr = nip19.decode(normalizedSearch);
       if (parsedNaddr.type === "naddr") {
@@ -71,7 +71,7 @@ export const productSatisfiesSearchFilter = (
   }
 
   // Handle Nip-19 npub search
-  if (normalizedSearch.includes("npub1")) {
+  if (normalizedSearch.startsWith("npub1")) {
     try {
       const parsedNpub = nip19.decode(normalizedSearch);
       if (parsedNpub.type === "npub") {
